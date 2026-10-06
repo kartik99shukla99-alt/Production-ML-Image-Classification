@@ -1,0 +1,126 @@
+groups:
+  - name: ml-api-and-workers
+    rules:
+      - alert: ApiTargetDown
+        expr: up{job="fastapi"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: FastAPI metrics endpoint is unreachable
+          description: Prometheus has not scraped the FastAPI target successfully for one minute.
+
+      - alert: ApiHighP95Latency
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="fastapi"}[5m]))) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: API p95 latency is above one second
+          description: FastAPI p95 request latency has exceeded one second for five minutes.
+
+      - alert: ApiHighErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="fastapi",status=~"5.."}[5m]))
+          / clamp_min(sum(rate(http_requests_total{job="fastapi"}[5m])), 1e-9) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: API 5xx error rate is above five percent
+          description: The FastAPI 5xx response rate has exceeded five percent for five minutes.
+
+      - alert: LowCacheHitRate
+        expr: |
+          (
+            100 * sum(rate(cache_hits_total{job="fastapi"}[10m]))
+            / clamp_min(sum(rate(cache_hits_total{job="fastapi"}[10m])) + sum(rate(cache_misses_total{job="fastapi"}[10m])), 1e-9)
+          ) < 60
+          and
+          (sum(rate(cache_hits_total{job="fastapi"}[10m])) + sum(rate(cache_misses_total{job="fastapi"}[10m]))) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Cache hit rate is below the 60 percent target
+          description: Cache hit rate has remained below 60 percent during active traffic for ten minutes.
+
+      - alert: FlowerTargetDown
+        expr: up{job="flower"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Flower metrics endpoint is unreachable
+          description: Prometheus cannot scrape Flower, so Celery worker and task metrics may be missing.
+
+      - alert: NoOnlineCeleryWorkers
+        expr: absent(flower_worker_online{job="flower"}) or sum(flower_worker_online{job="flower"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: No Celery workers are online
+          description: Flower reports no online Celery workers for one minute.
+
+      - alert: CeleryTaskFailureRateHigh
+        expr: |
+          sum(rate(flower_events_total{job="flower",type="task-failed"}[5m]))
+          / clamp_min(sum(rate(flower_events_total{job="flower",type=~"task-succeeded|task-failed"}[5m])), 1e-9) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Celery task failure rate is above five percent
+          description: More than five percent of completed Celery tasks have failed over the last five minutes.
+
+      - alert: RedisExporterDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Redis exporter is unreachable
+          description: Prometheus cannot scrape Redis health, memory, or queue metrics.
+
+      - alert: RedisUnavailable
+        expr: redis_up{job="redis"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: Redis is unavailable
+          description: The Redis exporter cannot connect to the Redis server.
+
+      - alert: RedisMemoryAbove80Percent
+        expr: redis_memory_max_bytes{job="redis"} > 0 and (redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Redis memory usage is above 80 percent
+          description: Redis has been above 80 percent of its configured maxmemory for five minutes.
+
+      - alert: RedisMemoryAbove90Percent
+        expr: redis_memory_max_bytes{job="redis"} > 0 and (redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"}) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Redis memory usage is above 90 percent
+          description: Redis has been above 90 percent of its configured maxmemory for two minutes.
+
+      - alert: CeleryQueueBacklogGrowing
+        expr: celery_queue_depth > 100 and delta(celery_queue_depth[5m]) > 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: Celery queue backlog is large and growing
+          description: The default Celery queue has exceeded 100 queued tasks and grown over the last five minutes.
+
+  - name: ml-recording-rules
+    interval: 5s
+    rules:
+      - record: celery_queue_depth
+        expr: redis_key_size{job="redis",key="celery"} or vector(0)

@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+pydantic-settings
+redis
+celery
+Pillow
+python-dotenv
+prometheus-fastapi-instrumentator
+prometheus-client

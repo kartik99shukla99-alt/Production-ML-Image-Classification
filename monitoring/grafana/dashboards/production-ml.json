@@ -1,0 +1,131 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "FastAPI request performance, cache behavior, Celery workers and queue, and Redis memory.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [{ "expr": "sum(rate(http_requests_total{job=\"fastapi\"}[1m]))", "refId": "A" }],
+      "title": "Request rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [{ "expr": "100 * sum(rate(http_requests_total{job=\"fastapi\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"fastapi\"}[5m])), 1e-9)", "refId": "A" }],
+      "title": "API 5xx error rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])))", "refId": "A" }],
+      "title": "API latency p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [{ "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])))", "refId": "A" }],
+      "title": "API latency p99",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "targets": [{ "expr": "100 * sum(rate(cache_hits_total{job=\"fastapi\"}[5m])) / clamp_min(sum(rate(cache_hits_total{job=\"fastapi\"}[5m])) + sum(rate(cache_misses_total{job=\"fastapi\"}[5m])), 1e-9)", "refId": "A" }],
+      "title": "Cache hit rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "targets": [{ "expr": "sum(rate(cache_misses_total{job=\"fastapi\"}[1m]))", "refId": "A" }],
+      "title": "Cache misses per second",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "id": 7,
+      "targets": [{ "expr": "sum(rate(flower_events_total{job=\"flower\",task=\"app.tasks.classification.classify_image\",type=\"task-succeeded\"}[1m]))", "refId": "A" }],
+      "title": "Successful inference tasks per second",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "id": 8,
+      "targets": [{ "expr": "celery_queue_depth", "refId": "A" }],
+      "title": "Celery queue depth",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "id": 9,
+      "targets": [{ "expr": "100 * redis_memory_used_bytes{job=\"redis\"} / clamp_min(redis_memory_max_bytes{job=\"redis\"}, 1)", "refId": "A" }],
+      "title": "Redis memory used",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "id": 10,
+      "targets": [{ "expr": "sum(flower_worker_online{job=\"flower\"})", "refId": "A" }],
+      "title": "Online Celery workers",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "id": 11,
+      "targets": [{ "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])))", "refId": "A" }],
+      "title": "API latency p50",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "id": 12,
+      "targets": [{ "expr": "100 * sum(rate(flower_events_total{job=\"flower\",type=\"task-failed\"}[5m])) / clamp_min(sum(rate(flower_events_total{job=\"flower\",type=~\"task-succeeded|task-failed\"}[5m])), 1e-9)", "refId": "A" }],
+      "title": "Celery task failure rate",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["fastapi", "prometheus", "redis", "celery"],
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Production ML Image Classification",
+  "uid": "production-ml-overview",
+  "version": 1
+}

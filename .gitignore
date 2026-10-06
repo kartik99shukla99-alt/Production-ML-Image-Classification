@@ -1,0 +1,43 @@
+# Environment and credentials
+.env
+.env.*
+!.env.example
+.aws/
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+.coverage
+
+# Uploaded files
+data/uploads/*
+data/uploads/**
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large model/data files
+*.pt
+*.pth
+*.onnx
+*.h5
+*.keras
+
+# Local image samples
+/test.jpg
+/tests/test_images/
